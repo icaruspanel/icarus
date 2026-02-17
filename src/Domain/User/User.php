@@ -3,15 +3,36 @@ declare(strict_types=1);
 
 namespace Icarus\Domain\User;
 
+use Carbon\CarbonImmutable;
 use Icarus\Domain\Shared\HasEvents;
 use Icarus\Domain\Shared\RecordsEvents;
 use Icarus\Domain\User\Events\UserEmailChanged;
 use Icarus\Domain\User\Events\UserPasswordChanged;
+use Icarus\Domain\User\Events\UserRegistered;
 use SensitiveParameter;
 
 final class User implements RecordsEvents
 {
     use HasEvents;
+
+    public static function register(
+        string                       $name,
+        string                       $email,
+        #[SensitiveParameter] string $password,
+        ?CarbonImmutable             $verifiedAt = null
+    ): self
+    {
+        $user = new self(
+            UserId::generate(),
+            $name,
+            UserEmail::create($email, $verifiedAt),
+            HashedPassword::from($password)
+        );
+
+        $user->recordEvent(new UserRegistered($user->id, $name, $user->email->email));
+
+        return $user;
+    }
 
     public readonly UserId $id;
 
@@ -72,14 +93,9 @@ final class User implements RecordsEvents
             return $this;
         }
 
-        $oldPassword    = $this->password;
         $this->password = HashedPassword::from($password);
 
-        $this->recordEvent(new UserPasswordChanged(
-            $this->id,
-            $oldPassword->hash,
-            $this->password->hash
-        ));
+        $this->recordEvent(new UserPasswordChanged($this->id));
 
         return $this;
     }

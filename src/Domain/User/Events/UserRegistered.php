@@ -5,10 +5,12 @@ namespace Icarus\Domain\User\Events;
 
 use Icarus\Domain\User\UserId;
 
-final readonly class UserPasswordChanged
+final readonly class UserRegistered
 {
     public function __construct(
-        public UserId $userId
+        public UserId $userId,
+        public string $name,
+        public string $email
     )
     {
     }
