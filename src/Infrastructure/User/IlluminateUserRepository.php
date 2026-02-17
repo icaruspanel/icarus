@@ -131,6 +131,7 @@ final class IlluminateUserRepository implements UserRepository
 
         $results = $this->query()
                         ->select(self::FIELDS)
+                        ->where('id', $id)
                         ->from(self::TABLE)
                         ->first();
 
