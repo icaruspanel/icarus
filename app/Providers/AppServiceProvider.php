@@ -2,18 +2,17 @@
 
 namespace App\Providers;
 
-use App\Auth\TokenGuard;
-use App\Enum\UserType;
-use App\Support\StateManager;
+use App\Auth\AuthTokenGuard;
+use App\Icarus;
 use Carbon\CarbonImmutable;
 use Closure;
+use Icarus\Domain\AuthToken\Commands\FlagAuthTokenUsageHandler;
+use Icarus\Domain\Shared\AuthContext;
+use Icarus\Infrastructure\User\Queries\GetUserById;
 use Illuminate\Auth\AuthManager;
-use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Foundation\Application;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\ServiceProvider;
-use InvalidArgumentException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,9 +22,9 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->registerDevelopmentProvider();
+        $this->registerIcarus();
         $this->setDateToBeImmutableByDefault();
         $this->registerAuth();
-        $this->registerStateManager();
     }
 
     private function registerDevelopmentProvider(): void
@@ -35,17 +34,25 @@ class AppServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Bootstrap any application services.
-     */
-    public function boot(): void
+    private function registerIcarus(): void
     {
-        //
+        // There's a chance that Icarus could be resolved multiple times, so we
+        // ensure that it doesn't infinitely queue up the refresh
+        static $resolved = false;
+
+        $this->app->scoped(Icarus::class);
+        $this->app->afterResolving(Icarus::class, function (Icarus $icarus) use (&$resolved) {
+            if ($resolved === false) {
+                $this->app->refresh(AuthContext::class, $icarus, 'setAuthContext');
+            }
+
+            $resolved = true;
+        });
     }
 
     private function setDateToBeImmutableByDefault(): void
     {
-        // The data facade is never used anywhere, this is mostly to get the IDE
+        // The Date facade is never used anywhere, this is mostly to get the IDE
         // helper to use 'CarbonImmutable' in the model helpers
         Date::use(CarbonImmutable::class);
     }
@@ -63,21 +70,17 @@ class AppServiceProvider extends ServiceProvider
 
     private function getAuthGuardCreator(): Closure
     {
-        return function (AuthManager $auth) {
-            $auth->extend('token', function (Application $app, string $name, array $config) use ($auth) {
-                /**
-                 * @var non-empty-string              $name
-                 * @var array{provider?: string|null} $config
-                 */
-                $provider = $this->getUserProvider($auth, $config);
-
-                $guard = new TokenGuard(
+        return static function (AuthManager $auth) {
+            $auth->extend('auth-token', function (Application $app, string $name, array $config) {
+                /** @var non-empty-string $name */
+                $guard = new AuthTokenGuard(
                     $name,
-                    $app->make(Request::class),
-                    $provider
+                    $app->make(GetUserById::class),
+                    $app->make(FlagAuthTokenUsageHandler::class),
+                    $app->bound(AuthContext::class) ? $app->make(AuthContext::class) : null,
                 );
 
-                $app->refresh('request', $guard, 'setRequest');
+                $app->refresh(AuthContext::class, $guard, 'setAuthContext');
 
                 return $guard;
             });
@@ -85,27 +88,10 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * @param array{provider?: string|null} $config
+     * Bootstrap any application services.
      */
-    private function getUserProvider(AuthManager $auth, array $config): UserProvider
+    public function boot(): void
     {
-        $provider = $auth->createUserProvider($config['provider'] ?? null);
-
-        if ($provider === null) {
-            throw new InvalidArgumentException('Unable to retrieve user provider.');
-        }
-
-        return $provider;
-    }
-
-    private function registerStateManager(): void
-    {
-        $this->app->singleton(StateManager::class);
-
-        // Register the user type enum as a singleton so that it returns
-        // only the current user type state
-        $this->app->bind(UserType::class, function (Application $app) {
-            return $app->make(StateManager::class)->getState(UserType::class);
-        });
+        //
     }
 }
