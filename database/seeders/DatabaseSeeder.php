@@ -2,26 +2,40 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Carbon\CarbonImmutable;
+use Icarus\Domain\User\HashedPassword;
+use Icarus\Domain\User\User;
+use Icarus\Domain\User\UserEmail;
+use Icarus\Domain\User\UserId;
+use Icarus\Domain\User\UserRepository;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
+    /**
+     * @var \Icarus\Domain\User\UserRepository
+     */
+    private UserRepository $repository;
+
+    public function __construct(UserRepository $repository)
+    {
+        $this->repository = $repository;
+    }
 
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->repository->save(
+            $user = new User(
+                UserId::generate(),
+                'Test User',
+                UserEmail::create('test@example.com', CarbonImmutable::create(1988, 6, 24, 2, 0, 0)),
+                HashedPassword::from('password'),
+            )
+        );
 
-        User::factory()->create([
-            'name'     => 'Test User',
-            'email'    => 'test@example.com',
-            'password' => 'password',
-            'is_admin' => true,
-        ]);
+        $this->command->info('Test user created: ' . $user->email->email . ':' . $user->id->id);
     }
 }
