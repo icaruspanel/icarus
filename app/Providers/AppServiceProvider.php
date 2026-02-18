@@ -23,7 +23,6 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->registerDevelopmentProvider();
         $this->registerIcarus();
-        $this->setDateToBeImmutableByDefault();
         $this->registerAuth();
     }
 
@@ -48,13 +47,6 @@ class AppServiceProvider extends ServiceProvider
 
             $resolved = true;
         });
-    }
-
-    private function setDateToBeImmutableByDefault(): void
-    {
-        // The Date facade is never used anywhere, this is mostly to get the IDE
-        // helper to use 'CarbonImmutable' in the model helpers
-        Date::use(CarbonImmutable::class);
     }
 
     private function registerAuth(): void
