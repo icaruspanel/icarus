@@ -76,12 +76,12 @@ final class AuthToken implements RecordsEvents
 
     public function hasExpired(CarbonImmutable $now): bool
     {
-        return $this->expiresAt && $this->expiresAt->isBefore($now);
+        return $this->expiresAt && $this->expiresAt->lte($now);
     }
 
     public function wasRevoked(CarbonImmutable $now): bool
     {
-        return $this->revokedAt && $this->revokedAt->isBefore($now);
+        return $this->revokedAt && $this->revokedAt->lte($now);
     }
 
     public function revoke(?string $reason = null): void
