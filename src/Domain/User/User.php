@@ -99,4 +99,14 @@ final class User implements RecordsEvents
 
         return $this;
     }
+
+    /**
+     * Check if the user is active.
+     *
+     * @return bool
+     */
+    public function isActive(): bool
+    {
+        return true;
+    }
 }
