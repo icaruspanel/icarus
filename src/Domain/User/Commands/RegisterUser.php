@@ -12,7 +12,7 @@ final readonly class RegisterUser
         public string                       $name,
         public string                       $email,
         #[SensitiveParameter] public string $password,
-        public CarbonImmutable              $verifiedAt
+        public ?CarbonImmutable             $verifiedAt = null
     )
     {
     }
