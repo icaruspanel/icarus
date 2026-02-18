@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Boot;
 
-use App\Http\Middleware\SetAuthContextFromToken;
+use App\Http\Middleware\SetAuthContextFromHeaderToken;
 use App\Http\Middleware\SetOperatingContext;
 use Closure;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -26,7 +26,7 @@ final class ConfigureMiddleware
     private function setupAliases(Middleware $middleware): void
     {
         $middleware->alias([
-            'context.auth'      => SetAuthContextFromToken::class,
+            'context.auth'      => SetAuthContextFromHeaderToken::class,
             'context.operating' => SetOperatingContext::class,
         ]);
     }

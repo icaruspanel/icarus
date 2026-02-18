@@ -11,16 +11,22 @@ use Closure;
 use Icarus\Domain\AuthToken\TokenPrefix;
 use Icarus\Domain\Shared\AuthContext;
 use Icarus\Infrastructure\AuthToken\Queries\ResolveAuthToken;
+use Illuminate\Auth\AuthManager;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class SetAuthContextFromToken
+class SetAuthContextFromHeaderToken
 {
     /**
      * @var \App\Icarus
      */
     private Icarus $icarus;
+
+    /**
+     * @var \Illuminate\Auth\AuthManager
+     */
+    private AuthManager $auth;
 
     /**
      * @var \Icarus\Infrastructure\AuthToken\Queries\ResolveAuthToken
@@ -33,18 +39,24 @@ class SetAuthContextFromToken
     private Container $container;
 
     public function __construct(
-        Icarus $icarus,
+        Icarus           $icarus,
         ResolveAuthToken $query,
+        AuthManager      $auth,
         Container        $container
     )
     {
         $this->icarus    = $icarus;
         $this->query     = $query;
+        $this->auth      = $auth;
         $this->container = $container;
     }
 
     public function handle(Request $request, Closure $next): Response
     {
+        // The custom guard we use isn't API specific, but this middleware is,
+        // so we need to make sure that the default auth guard is the API one
+        $this->auth->shouldUse('api');
+
         // This shouldn't ever be hit, in theory, but it's here just in case
         if ($this->icarus->hasContext() === false) {
             throw new OutOfOperatingContext('Operating context missing');

@@ -22,8 +22,10 @@ class LoginWithCredentialsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email'    => ['required', 'email'],
-            'password' => ['required'],
+            'email'      => ['required', 'email'],
+            'password'   => ['required'],
+            'user_agent' => ['sometimes', 'string'],
+            'ip'         => ['sometimes', 'ip'],
         ];
     }
 }
