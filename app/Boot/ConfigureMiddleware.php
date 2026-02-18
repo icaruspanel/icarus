@@ -3,9 +3,8 @@ declare(strict_types=1);
 
 namespace App\Boot;
 
-use App\Http\Middleware\AdminRequestsOnly;
-use App\Http\Middleware\Authenticate;
-use App\Http\Middleware\UserRequestsOnly;
+use App\Http\Middleware\SetAuthContextFromToken;
+use App\Http\Middleware\SetOperatingContext;
 use Closure;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Routing\Middleware\SubstituteBindings;
@@ -19,27 +18,32 @@ final class ConfigureMiddleware
 
     public function __invoke(Middleware $middleware): void
     {
-        $this->setupUserMiddleware($middleware);
-        $this->setupAdminMiddleware($middleware);
+        $this->setupAliases($middleware);
+        $this->setupAccountMiddleware($middleware);
+        $this->setupPlatformMiddleware($middleware);
     }
 
-    private function setupUserMiddleware(Middleware $middleware): void
+    private function setupAliases(Middleware $middleware): void
     {
-        $middleware->group('user', [
-            UserRequestsOnly::class,
-            SubstituteBindings::class,
+        $middleware->alias([
+            'context.auth'      => SetAuthContextFromToken::class,
+            'context.operating' => SetOperatingContext::class,
         ]);
-
-        $middleware->append(UserRequestsOnly::class);
     }
 
-    private function setupAdminMiddleware(Middleware $middleware): void
+    private function setupAccountMiddleware(Middleware $middleware): void
     {
-        $middleware->group('admin', [
-            AdminRequestsOnly::class,
+        $middleware->group('account', [
             SubstituteBindings::class,
+            'context.operating:account',
         ]);
+    }
 
-        $middleware->append(AdminRequestsOnly::class);
+    private function setupPlatformMiddleware(Middleware $middleware): void
+    {
+        $middleware->group('platform', [
+            SubstituteBindings::class,
+            'context.operating:platform',
+        ]);
     }
 }

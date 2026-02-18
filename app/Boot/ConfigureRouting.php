@@ -4,9 +4,9 @@ declare(strict_types=1);
 namespace App\Boot;
 
 use App\Http\Middleware\EnforceJsonRequests;
-use App\Http\Routes\Admin;
+use App\Http\Routes\Account;
 use App\Http\Routes\DefaultRoutes;
-use App\Http\Routes\User;
+use App\Http\Routes\Platform;
 use Closure;
 use Illuminate\Routing\Router;
 
@@ -26,39 +26,36 @@ final class ConfigureRouting
         ],
     ];
 
+
     /**
      * @var array<string, list<class-string<\App\Support\RouteMapper>>>
      */
-    private static array $ApiMappers = [
-        'user'  => [
-            User\UserAuthRoutes::class,
+    private static array $accountMappers = [
+        'api' => [
+            Account\AccountAuthRoutes::class,
         ],
-        'admin' => [
-            Admin\AdminAuthRoutes::class,
+    ];
+
+
+    /**
+     * @var array<string, list<class-string<\App\Support\RouteMapper>>>
+     */
+    private static array $platformMappers = [
+        'api' => [
+            Platform\PlatformAuthRoutes::class,
         ],
     ];
 
     public function __invoke(Router $router): void
     {
-        foreach (self::$mappers as $group => $mappers) {
-            $method = 'map' . ucfirst($group);
-
-            if (method_exists($this, $method)) {
-                $this->$method($router, $mappers);
-            }
-        }
+        $this->mapWeb($router, self::$mappers['web']);
 
         $router->name('api.v1.')
                ->prefix('/api/v1/')
                ->middleware([EnforceJsonRequests::class])
                ->group(function () use ($router) {
-                   foreach (self::$ApiMappers as $group => $mappers) {
-                       $method = 'map' . ucfirst($group) . 'Api';
-
-                       if (method_exists($this, $method)) {
-                           $this->$method($router, $mappers);
-                       }
-                   }
+                   $this->mapAccountApi($router, self::$accountMappers['api']);
+                   $this->mapPlatformApi($router, self::$platformMappers['api']);
                });
     }
 
@@ -75,11 +72,11 @@ final class ConfigureRouting
     /**
      * @param list<class-string<\App\Support\RouteMapper>> $mappers
      */
-    private function mapUserApi(Router $router, array $mappers): void
+    private function mapAccountApi(Router $router, array $mappers): void
     {
-        $router->middleware('user')
-               ->prefix('user/')
-               ->name('user:')
+        $router->middleware('account')
+               ->prefix('account/')
+               ->name('account:')
                ->group(function () use ($router, $mappers) {
                    /** @var class-string<\App\Support\RouteMapper> $mapper */
                    foreach ($mappers as $mapper) {
@@ -91,11 +88,11 @@ final class ConfigureRouting
     /**
      * @param list<class-string<\App\Support\RouteMapper>> $mappers
      */
-    private function mapAdminApi(Router $router, array $mappers): void
+    private function mapPlatformApi(Router $router, array $mappers): void
     {
-        $router->middleware('admin')
-               ->prefix('/admin/')
-               ->name('admin:')
+        $router->middleware('platform')
+               ->prefix('platform/')
+               ->name('platform:')
                ->group(function () use ($router, $mappers) {
                    /** @var class-string<\App\Support\RouteMapper> $mapper */
                    foreach ($mappers as $mapper) {
