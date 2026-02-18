@@ -3,29 +3,31 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Auth\TokenGuard;
-use App\Enum\UserType;
+use App\Http\Exceptions\OutOfOperatingContext;
 use App\Http\Requests\LoginWithCredentialsRequest;
-use App\Models\User;
-use Illuminate\Container\Attributes\Auth;
+use App\Http\Responses\ApiResponse;
+use App\Http\Responses\AuthTokenResponse;
+use App\Icarus;
+use Icarus\Domain\AuthToken\Commands\AuthenticateUser;
+use Icarus\Domain\AuthToken\Commands\AuthenticateUserHandler;
 use Illuminate\Http\JsonResponse;
 
 final readonly class LoginWithCredentials
 {
     /**
-     * @var \App\Auth\TokenGuard
+     * @var \App\Icarus
      */
-    private TokenGuard $guard;
+    private Icarus $icarus;
 
     /**
-     * @var \App\Enum\UserType
+     * @var \Icarus\Domain\AuthToken\Commands\AuthenticateUserHandler
      */
-    private UserType $userType;
+    private AuthenticateUserHandler $authenticate;
 
-    public function __construct(UserType $userType, #[Auth('api')] TokenGuard $guard)
+    public function __construct(Icarus $icarus, AuthenticateUserHandler $authenticate)
     {
-        $this->userType = $userType;
-        $this->guard    = $guard;
+        $this->icarus       = $icarus;
+        $this->authenticate = $authenticate;
     }
 
     /**
@@ -35,23 +37,23 @@ final readonly class LoginWithCredentials
      */
     public function __invoke(LoginWithCredentialsRequest $request): JsonResponse
     {
+        // This shouldn't ever be hit, in theory, but it's here just in case
+        if ($this->icarus->hasContext() === false) {
+            throw new OutOfOperatingContext('Operating context missing');
+        }
+
+        /** @var \Icarus\Domain\Shared\OperatingContext $context */
+        $context = $this->icarus->getContext();
+
         /** @var array{email: string, password: string} $credentials */
         $credentials = $request->validated();
 
-        if ($this->guard->validate($credentials)) {
-            $user = User::query()->where('email', $credentials['email'])->firstOrFail();
+        $authentication = $this->authenticate->handle(new AuthenticateUser(
+            $credentials['email'],
+            $credentials['password'],
+            $context
+        ));
 
-            $this->guard->auth($user, $this->userType);
-
-            /** @var \App\Models\AuthToken $token */
-            $token = $this->guard->token();
-
-            return response()->json([
-                'message' => 'Logged in successfully.',
-                'token'   => $token->token,
-            ]);
-        }
-
-        return response()->json(['message' => 'Invalid credentials.'], 401);
+        return ApiResponse::item(AuthTokenResponse::make($authentication));
     }
 }
