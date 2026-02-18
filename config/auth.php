@@ -37,7 +37,7 @@ return [
 
     'guards' => [
         'api' => [
-            'driver'   => 'token',
+            'driver'   => 'auth-token',
             'provider' => 'users',
         ],
     ],
@@ -62,7 +62,8 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model'  => \App\Models\User::class,
+            // This is never actually used.
+            'model'  => \Illuminate\Foundation\Auth\User::class,
         ],
     ],
 
