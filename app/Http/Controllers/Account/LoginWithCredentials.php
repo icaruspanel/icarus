@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Account;
 
 use App\Http\Exceptions\OutOfOperatingContext;
 use App\Http\Requests\LoginWithCredentialsRequest;
@@ -10,6 +10,7 @@ use App\Http\Responses\AuthTokenResponse;
 use App\Icarus;
 use Icarus\Domain\AuthToken\Commands\AuthenticateUser;
 use Icarus\Domain\AuthToken\Commands\AuthenticateUserHandler;
+use Icarus\Domain\AuthToken\Device;
 use Illuminate\Http\JsonResponse;
 
 final readonly class LoginWithCredentials
@@ -45,13 +46,17 @@ final readonly class LoginWithCredentials
         /** @var \Icarus\Domain\Shared\OperatingContext $context */
         $context = $this->icarus->getContext();
 
-        /** @var array{email: string, password: string} $credentials */
+        /** @var array{email: string, password: string, user_agent?: string|null, ip?: string|null} $credentials */
         $credentials = $request->validated();
 
         $authentication = $this->authenticate->handle(new AuthenticateUser(
             $credentials['email'],
             $credentials['password'],
-            $context
+            $context,
+            new Device(
+                $credentials['user_agent'] ?? $request->userAgent(),
+                    $credentials['ip'] ?? $request->ip()
+            )
         ));
 
         return ApiResponse::item(AuthTokenResponse::make($authentication));

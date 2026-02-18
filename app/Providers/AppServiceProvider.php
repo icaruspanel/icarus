@@ -2,17 +2,17 @@
 
 namespace App\Providers;
 
+use App\Auth\AuthenticatedUser;
 use App\Auth\AuthTokenGuard;
 use App\Icarus;
-use Carbon\CarbonImmutable;
 use Closure;
 use Icarus\Domain\AuthToken\Commands\FlagAuthTokenUsageHandler;
 use Icarus\Domain\Shared\AuthContext;
 use Icarus\Infrastructure\User\Queries\GetUserById;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Foundation\Application;
-use Illuminate\Support\Facades\Date;
 use Illuminate\Support\ServiceProvider;
+use RuntimeException;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -51,6 +51,7 @@ class AppServiceProvider extends ServiceProvider
 
     private function registerAuth(): void
     {
+        // First we bind the custom guard creator
         $creator = $this->getAuthGuardCreator();
 
         if ($this->app->resolved('auth')) {
@@ -58,6 +59,22 @@ class AppServiceProvider extends ServiceProvider
         } else {
             $this->app->afterResolving('auth', $creator);
         }
+
+        // Then we add a binding for our custom auth token guard
+        $this->app->bind(AuthTokenGuard::class, function (Application $app) {
+            $guard = $app->make(AuthManager::class)->guard();
+
+            if (! $guard instanceof AuthTokenGuard) {
+                throw new RuntimeException('The guard is not an instance of AuthTokenGuard');
+            }
+
+            return $guard;
+        });
+
+        // And finally we bind the authenticated user
+        $this->app->bind(AuthenticatedUser::class, function (Application $app) {
+            return $app->make(AuthTokenGuard::class)->user();
+        });
     }
 
     private function getAuthGuardCreator(): Closure
