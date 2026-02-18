@@ -24,4 +24,13 @@ interface UserRepository
      * @return \Icarus\Domain\User\User|null
      */
     public function find(UserId $id): ?User;
+
+    /**
+     * Find a user by its email address.
+     *
+     * @param string $email
+     *
+     * @return \Icarus\Domain\User\User|null
+     */
+    public function findByEmail(string $email): ?User;
 }
