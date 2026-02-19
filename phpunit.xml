@@ -18,6 +18,44 @@
             <directory>app</directory>
             <directory>src</directory>
         </include>
+        <exclude>
+            <!-- Shared: enum, interfaces, value objects -->
+            <file>src/Domain/Shared/OperatingContext.php</file>
+            <file>src/Domain/Shared/AuthContext.php</file>
+            <file>src/Domain/Shared/Cancellable.php</file>
+            <file>src/Domain/Shared/RecordsEvents.php</file>
+            <file>src/Domain/Shared/EventDispatcher.php</file>
+
+            <!-- User: interfaces, IDs, DTOs, events, read models -->
+            <file>src/Domain/User/UserRepository.php</file>
+            <file>src/Domain/User/UserId.php</file>
+            <file>src/Domain/User/ReadModels/UserResult.php</file>
+            <file>src/Domain/User/Commands/RegisterUser.php</file>
+            <file>src/Domain/User/Events/UserRegistered.php</file>
+            <file>src/Domain/User/Events/UserEmailChanged.php</file>
+            <file>src/Domain/User/Events/UserPasswordChanged.php</file>
+
+            <!-- AuthToken: interfaces, IDs, DTOs, events, exceptions, hooks -->
+            <file>src/Domain/AuthToken/AuthTokenRepository.php</file>
+            <file>src/Domain/AuthToken/AuthTokenId.php</file>
+            <file>src/Domain/AuthToken/Device.php</file>
+            <file>src/Domain/AuthToken/UnhashedToken.php</file>
+            <file>src/Domain/AuthToken/Commands/AuthenticateUser.php</file>
+            <file>src/Domain/AuthToken/Commands/AuthenticationResult.php</file>
+            <file>src/Domain/AuthToken/Commands/FlagAuthTokenUsage.php</file>
+            <file>src/Domain/AuthToken/Events/AuthTokenRevoked.php</file>
+            <file>src/Domain/AuthToken/Events/UserAuthenticated.php</file>
+            <file>src/Domain/AuthToken/Exceptions/AuthenticationFailed.php</file>
+            <file>src/Domain/AuthToken/Exceptions/InvalidCredentials.php</file>
+            <file>src/Domain/AuthToken/Exceptions/UnableToAuthenticate.php</file>
+            <file>src/Domain/AuthToken/Hooks/AuthenticatingUser.php</file>
+
+            <!-- Infrastructure: service providers, framework glue -->
+            <file>src/Infrastructure/Shared/SharedServiceProvider.php</file>
+            <file>src/Infrastructure/Shared/HandlesIlluminateConnections.php</file>
+            <file>src/Infrastructure/User/UserDomainServiceProvider.php</file>
+            <file>src/Infrastructure/AuthToken/AuthTokenDomainServiceProvider.php</file>
+        </exclude>
     </source>
     <coverage>
         <report>
