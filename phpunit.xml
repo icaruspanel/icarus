@@ -9,6 +9,9 @@
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
         <testsuite name="Feature">
             <directory>tests/Feature</directory>
         </testsuite>
@@ -55,6 +58,11 @@
             <file>src/Infrastructure/Shared/HandlesIlluminateConnections.php</file>
             <file>src/Infrastructure/User/UserDomainServiceProvider.php</file>
             <file>src/Infrastructure/AuthToken/AuthTokenDomainServiceProvider.php</file>
+
+            <!-- App: service providers -->
+            <file>app/Providers/AppServiceProvider.php</file>
+            <file>app/Providers/DevServiceProvider.php</file>
+            <file>app/Providers/TelescopeServiceProvider.php</file>
         </exclude>
     </source>
     <coverage>
