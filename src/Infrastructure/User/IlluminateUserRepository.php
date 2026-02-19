@@ -24,7 +24,7 @@ final class IlluminateUserRepository implements UserRepository
 
     public const string TABLE = 'users';
 
-    public const array FIELDS = ['id', 'name', 'email', 'password', 'verified_at'];
+    public const array FIELDS = ['id', 'name', 'email', 'password', 'active', 'verified_at'];
 
     /**
      * @var \Icarus\Domain\User\UserHydrator
@@ -134,6 +134,9 @@ final class IlluminateUserRepository implements UserRepository
 
         // If it was successful, we have things to do.
         if ($success) {
+            // Make sure the user is in the identity map.
+            $this->identityMap->put($user->id, $user);
+
             // Like to record an updated snapshot.
             $this->snapshotMap->put($user->id, User::class, $raw);
 
