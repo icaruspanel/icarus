@@ -249,11 +249,13 @@ class IlluminateUserRepositoryTest extends TestCase
         $this->repository->save($user);
 
         // Fresh repository to bypass identity map
-        $freshRepository = new IlluminateUserRepository(
+        $freshIdentityMap = new IdentityMap();
+        $freshSnapshotMap = new SnapshotMap();
+        $freshRepository  = new IlluminateUserRepository(
             new UserHydrator(),
             $this->app->make('db.connection'),
-            new IdentityMap(),
-            new SnapshotMap(),
+            $freshIdentityMap,
+            $freshSnapshotMap,
             $this->dispatcher,
         );
 
@@ -264,6 +266,11 @@ class IlluminateUserRepositoryTest extends TestCase
         $this->assertSame('Test User', $found->name);
         $this->assertSame('test@example.com', $found->email->email);
         $this->assertTrue($found->isActive());
+
+        // Verify the entity was added to the identity map and snapshot map
+        $this->assertTrue($freshIdentityMap->has($user->id, User::class));
+        $this->assertSame($found, $freshIdentityMap->get($user->id, User::class));
+        $this->assertTrue($freshSnapshotMap->has($user->id, User::class));
     }
 
     #[Test]
@@ -303,11 +310,13 @@ class IlluminateUserRepositoryTest extends TestCase
         $this->repository->save($user);
 
         // Fresh repository to bypass identity map
-        $freshRepository = new IlluminateUserRepository(
+        $freshIdentityMap = new IdentityMap();
+        $freshSnapshotMap = new SnapshotMap();
+        $freshRepository  = new IlluminateUserRepository(
             new UserHydrator(),
             $this->app->make('db.connection'),
-            new IdentityMap(),
-            new SnapshotMap(),
+            $freshIdentityMap,
+            $freshSnapshotMap,
             $this->dispatcher,
         );
 
@@ -316,6 +325,11 @@ class IlluminateUserRepositoryTest extends TestCase
         $this->assertNotNull($found);
         $this->assertSame($user->id->id, $found->id->id);
         $this->assertSame('test@example.com', $found->email->email);
+
+        // Verify the entity was added to the identity map and snapshot map
+        $this->assertTrue($freshIdentityMap->has($user->id, User::class));
+        $this->assertSame($found, $freshIdentityMap->get($user->id, User::class));
+        $this->assertTrue($freshSnapshotMap->has($user->id, User::class));
     }
 
     #[Test]

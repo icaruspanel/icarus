@@ -316,11 +316,13 @@ class IlluminateAuthTokenRepositoryTest extends TestCase
         $this->repository->save($token);
 
         // Fresh repository to bypass identity map
-        $freshRepository = new IlluminateAuthTokenRepository(
+        $freshIdentityMap = new IdentityMap();
+        $freshSnapshotMap = new SnapshotMap();
+        $freshRepository  = new IlluminateAuthTokenRepository(
             new AuthTokenHydrator(),
             $this->app->make('db.connection'),
-            new IdentityMap(),
-            new SnapshotMap(),
+            $freshIdentityMap,
+            $freshSnapshotMap,
             $this->dispatcher,
         );
 
@@ -333,6 +335,11 @@ class IlluminateAuthTokenRepositoryTest extends TestCase
         $this->assertSame(OperatingContext::Account, $found->context);
         $this->assertSame('Mozilla/5.0', $found->device->userAgent);
         $this->assertSame('127.0.0.1', $found->device->ip);
+
+        // Verify the entity was added to the identity map and snapshot map
+        $this->assertTrue($freshIdentityMap->has($token->id, AuthToken::class));
+        $this->assertSame($found, $freshIdentityMap->get($token->id, AuthToken::class));
+        $this->assertTrue($freshSnapshotMap->has($token->id, AuthToken::class));
     }
 
     #[Test]
@@ -372,11 +379,13 @@ class IlluminateAuthTokenRepositoryTest extends TestCase
         $this->repository->save($token);
 
         // Fresh repository to bypass identity map
-        $freshRepository = new IlluminateAuthTokenRepository(
+        $freshIdentityMap = new IdentityMap();
+        $freshSnapshotMap = new SnapshotMap();
+        $freshRepository  = new IlluminateAuthTokenRepository(
             new AuthTokenHydrator(),
             $this->app->make('db.connection'),
-            new IdentityMap(),
-            new SnapshotMap(),
+            $freshIdentityMap,
+            $freshSnapshotMap,
             $this->dispatcher,
         );
 
@@ -385,6 +394,11 @@ class IlluminateAuthTokenRepositoryTest extends TestCase
         $this->assertNotNull($found);
         $this->assertSame($token->id->id, $found->id->id);
         $this->assertSame('sel12345', $found->token->selector);
+
+        // Verify the entity was added to the identity map and snapshot map
+        $this->assertTrue($freshIdentityMap->has($token->id, AuthToken::class));
+        $this->assertSame($found, $freshIdentityMap->get($token->id, AuthToken::class));
+        $this->assertTrue($freshSnapshotMap->has($token->id, AuthToken::class));
     }
 
     #[Test]
