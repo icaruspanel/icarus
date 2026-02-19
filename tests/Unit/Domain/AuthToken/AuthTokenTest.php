@@ -7,6 +7,7 @@ use Carbon\CarbonImmutable;
 use Icarus\Domain\AuthToken\AuthToken;
 use Icarus\Domain\AuthToken\AuthTokenId;
 use Icarus\Domain\AuthToken\StoredToken;
+use Icarus\Domain\AuthToken\Device;
 use Icarus\Domain\Shared\OperatingContext;
 use Icarus\Domain\User\UserId;
 use PHPUnit\Framework\Attributes\Group;
@@ -21,13 +22,20 @@ class AuthTokenTest extends TestCase
     public function createGeneratesUniqueIds(): void
     {
         $context = OperatingContext::Account;
-        $token   = AuthToken::create(
+        $tokenA  = AuthToken::create(
+            UserId::generate(),
+            $context,
+            StoredToken::create($context)->token,
+        );
+        $tokenB  = AuthToken::create(
             UserId::generate(),
             $context,
             StoredToken::create($context)->token,
         );
 
-        $this->assertTrue(Ulid::isValid($token->id->id));
+        $this->assertTrue(Ulid::isValid($tokenA->id->id));
+        $this->assertTrue(Ulid::isValid($tokenB->id->id));
+        $this->assertNotSame($tokenA->id->id, $tokenB->id->id);
     }
 
     #[Test]
@@ -58,7 +66,23 @@ class AuthTokenTest extends TestCase
     }
 
     #[Test]
-    public function createDefaultsRevokedFieldsToNull(): void
+    public function createAssignsTheGivenDevice(): void
+    {
+        $context = OperatingContext::Account;
+        $device  = new Device('TestAgent', '127.0.0.1');
+        $token   = AuthToken::create(
+            UserId::generate(),
+            $context,
+            StoredToken::create($context)->token,
+            $device,
+        );
+
+        $this->assertSame('TestAgent', $token->device->userAgent);
+        $this->assertSame('127.0.0.1', $token->device->ip);
+    }
+
+    #[Test]
+    public function createDefaultsOptionalFieldsToNull(): void
     {
         $context = OperatingContext::Account;
         $token   = AuthToken::create(
@@ -67,6 +91,8 @@ class AuthTokenTest extends TestCase
             StoredToken::create($context)->token,
         );
 
+        $this->assertNull($token->lastUsedAt);
+        $this->assertNull($token->expiresAt);
         $this->assertNull($token->revokedAt);
         $this->assertNull($token->revokedReason);
     }
@@ -134,7 +160,7 @@ class AuthTokenTest extends TestCase
     }
 
     #[Test]
-    public function wasRevokedReturnsFalseWithNoExpiresAtTimestamp(): void
+    public function wasRevokedReturnsFalseWithNoRevokedAtTimestamp(): void
     {
         $context = OperatingContext::Account;
         $token   = AuthToken::create(
@@ -147,7 +173,7 @@ class AuthTokenTest extends TestCase
     }
 
     #[Test]
-    public function wasRevokedReturnsFalseWhenExpiresAtIsInTheFuture(): void
+    public function wasRevokedReturnsFalseWhenRevokedAtIsInTheFuture(): void
     {
         $context = OperatingContext::Account;
         $token   = new AuthToken(
@@ -164,7 +190,7 @@ class AuthTokenTest extends TestCase
     }
 
     #[Test]
-    public function wasRevokedReturnsTrueWhenExpiresAtIsInThePast(): void
+    public function wasRevokedReturnsTrueWhenRevokedAtIsInThePast(): void
     {
         $context = OperatingContext::Account;
         $token   = new AuthToken(
@@ -181,7 +207,7 @@ class AuthTokenTest extends TestCase
     }
 
     #[Test]
-    public function wasRevokedReturnsTrueWhenExpiresAtIsNow(): void
+    public function wasRevokedReturnsTrueWhenRevokedAtIsNow(): void
     {
         $now     = CarbonImmutable::now();
         $context = OperatingContext::Account;
@@ -199,20 +225,20 @@ class AuthTokenTest extends TestCase
     }
 
     #[Test]
-    public function revokedSetsRevokedAtToNow(): void
+    public function revokeSetsRevokedAtToNow(): void
     {
         $now = CarbonImmutable::now();
 
         CarbonImmutable::setTestNow($now);
 
         $context = OperatingContext::Account;
-        $token   = new AuthToken(
-            AuthTokenId::generate(),
-            StoredToken::create($context)->token,
+        $token   = AuthToken::create(
             UserId::generate(),
             $context,
-            revokedAt: $now
+            StoredToken::create($context)->token,
         );
+
+        $this->assertNull($token->revokedAt);
 
         $token->revoke();
 
@@ -224,20 +250,21 @@ class AuthTokenTest extends TestCase
     }
 
     #[Test]
-    public function revokedSetsRevokedReasonIfOneIsProvided(): void
+    public function revokeSetsRevokedReasonIfOneIsProvided(): void
     {
         $now = CarbonImmutable::now();
 
         CarbonImmutable::setTestNow($now);
 
         $context = OperatingContext::Account;
-        $token   = new AuthToken(
-            AuthTokenId::generate(),
-            StoredToken::create($context)->token,
+        $token   = AuthToken::create(
             UserId::generate(),
             $context,
-            revokedAt: $now
+            StoredToken::create($context)->token,
         );
+
+        $this->assertNull($token->revokedAt);
+        $this->assertNull($token->revokedReason);
 
         $token->revoke('For testing purposes');
 
@@ -251,20 +278,20 @@ class AuthTokenTest extends TestCase
     }
 
     #[Test]
-    public function revokedDefaultsReasonToNull(): void
+    public function revokeDefaultsReasonToNull(): void
     {
         $now = CarbonImmutable::now();
 
         CarbonImmutable::setTestNow($now);
 
         $context = OperatingContext::Account;
-        $token   = new AuthToken(
-            AuthTokenId::generate(),
-            StoredToken::create($context)->token,
+        $token   = AuthToken::create(
             UserId::generate(),
             $context,
-            revokedAt: $now
+            StoredToken::create($context)->token,
         );
+
+        $this->assertNull($token->revokedReason);
 
         $token->revoke();
 
@@ -281,15 +308,11 @@ class AuthTokenTest extends TestCase
     {
         $now = CarbonImmutable::now();
 
-        CarbonImmutable::setTestNow($now);
-
         $context = OperatingContext::Account;
-        $token   = new AuthToken(
-            AuthTokenId::generate(),
-            StoredToken::create($context)->token,
+        $token   = AuthToken::create(
             UserId::generate(),
             $context,
-            revokedAt: $now
+            StoredToken::create($context)->token,
         );
 
         $this->assertNull($token->lastUsedAt);
@@ -306,7 +329,5 @@ class AuthTokenTest extends TestCase
         $this->assertNotNull($token->lastUsedAt);
         $this->assertTrue($token->lastUsedAt->equalTo($newNow));
         $this->assertTrue($token->lastUsedAt->isBefore($now));
-
-        CarbonImmutable::setTestNow();
     }
 }
