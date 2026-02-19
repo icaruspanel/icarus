@@ -13,6 +13,11 @@
   },
   "mutators": {
     "@default": true,
-    "global-ignore": []
+    "global-ignore": [],
+    "ProtectedVisibility": {
+      "ignore": [
+        "Icarus\\Domain\\Shared\\HasEvents::recordEvent"
+      ]
+    }
   }
 }
