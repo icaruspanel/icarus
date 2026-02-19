@@ -103,8 +103,8 @@ final class AuthenticateUserHandler
 
         try {
             $token = StoredToken::create($command->context);
-        } catch (RandomException $e) {
-            throw UnableToAuthenticate::make('Unable to generate auth token', $user->id, $e);
+        } catch (RandomException $e) {                                                        // @codeCoverageIgnore
+            throw UnableToAuthenticate::make('Unable to generate auth token', $user->id, $e); // @codeCoverageIgnore
         }
 
         $authToken = AuthToken::create(
