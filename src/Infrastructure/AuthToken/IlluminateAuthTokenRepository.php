@@ -144,6 +144,9 @@ final class IlluminateAuthTokenRepository implements AuthTokenRepository
 
         // If it was successful, we have things to do.
         if ($success) {
+            // Make sure the token is in the identity map.
+            $this->identityMap->put($token->id, $token);
+
             // Like to record an updated snapshot.
             $this->snapshotMap->put($token->id, AuthToken::class, $raw);
 
