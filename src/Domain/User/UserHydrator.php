@@ -32,7 +32,7 @@ final class UserHydrator
             $data['name'],
             UserEmail::create($data['email'], $verifiedAt),
             new HashedPassword($data['password']),
-            $data['active']
+            (bool) $data['active']
         );
     }
 
