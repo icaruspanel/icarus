@@ -6,7 +6,7 @@ namespace Icarus\Domain\User;
 use Carbon\CarbonImmutable;
 
 /**
- * @phpstan-type UserData array{id: string, name: string, email: string, password: string, verified_at: ?string}
+ * @phpstan-type UserData array{id: string, name: string, email: string, password: string, active: bool, verified_at: ?string}
  */
 final class UserHydrator
 {
@@ -31,7 +31,8 @@ final class UserHydrator
             new UserId($data['id']),
             $data['name'],
             UserEmail::create($data['email'], $verifiedAt),
-            new HashedPassword($data['password'])
+            new HashedPassword($data['password']),
+            $data['active']
         );
     }
 
@@ -51,6 +52,7 @@ final class UserHydrator
             'name'        => $user->name,
             'email'       => $user->email->email,
             'password'    => $user->password->hash,
+            'active'      => $user->active,
             'verified_at' => $user->email->verifiedAt?->format('Y-m-d H:i:s'),
         ];
     }

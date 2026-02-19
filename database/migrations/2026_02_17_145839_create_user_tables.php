@@ -18,10 +18,7 @@ return new class extends Migration {
             $table->string('email')->unique();
             $table->string('password');
 
-            // This is never used but has to be here because Laravel auth
-            // is crap
-            $table->rememberToken();
-
+            $table->boolean('active')->default(true);
             $table->timestamp('verified_at')->nullable();
 
             $table->timestamps();

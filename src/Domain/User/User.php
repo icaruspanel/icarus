@@ -42,17 +42,21 @@ final class User implements RecordsEvents
 
     private(set) HashedPassword $password;
 
+    private(set) bool $active;
+
     public function __construct(
         UserId         $id,
         string         $name,
         UserEmail      $email,
-        HashedPassword $password
+        HashedPassword $password,
+        bool $active = true,
     )
     {
         $this->id       = $id;
         $this->name     = $name;
         $this->email    = $email;
         $this->password = $password;
+        $this->active   = $active;
     }
 
     /**
@@ -107,6 +111,6 @@ final class User implements RecordsEvents
      */
     public function isActive(): bool
     {
-        return true;
+        return $this->active;
     }
 }
