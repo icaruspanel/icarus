@@ -24,7 +24,7 @@ final class IlluminateUserRepository implements UserRepository
 
     public const string TABLE = 'users';
 
-    public const array FIELDS = ['id', 'name', 'email', 'password', 'active', 'verified_at'];
+    public const array FIELDS = ['id', 'name', 'email', 'password', 'active', 'operates_in', 'verified_at'];
 
     /**
      * @var \Icarus\Domain\User\UserHydrator

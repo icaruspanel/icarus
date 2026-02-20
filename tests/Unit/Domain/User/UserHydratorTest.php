@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Domain\User;
 
+use Icarus\Domain\Shared\OperatingContext;
 use Icarus\Domain\User\UserHydrator;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
@@ -26,6 +27,7 @@ class UserHydratorTest extends TestCase
             'name'        => 'Test User',
             'email'       => 'test@example.com',
             'password'    => '$argon2id$v=19$m=65536,t=4,p=1$dummyhash',
+            'operates_in' => '["account","platform"]',
             'active'      => true,
             'verified_at' => '1988-06-24 02:05:07',
         ];
@@ -118,6 +120,31 @@ class UserHydratorTest extends TestCase
     }
 
     #[Test]
+    public function createsUserWithTheCorrectOperatesIn(): void
+    {
+        $hydrator = new UserHydrator();
+
+        $user = $hydrator->hydrate(self::$dummyData);
+
+        $this->assertCount(2, $user->operatesIn);
+        $this->assertSame(OperatingContext::Account, $user->operatesIn[0]);
+        $this->assertSame(OperatingContext::Platform, $user->operatesIn[1]);
+    }
+
+    #[Test]
+    public function createsUserWithEmptyOperatesIn(): void
+    {
+        $hydrator = new UserHydrator();
+
+        $data                = self::$dummyData;
+        $data['operates_in'] = '[]';
+
+        $user = $hydrator->hydrate($data);
+
+        $this->assertEmpty($user->operatesIn);
+    }
+
+    #[Test]
     public function createsUserWithNullVerifiedAt(): void
     {
         $hydrator = new UserHydrator();
@@ -144,7 +171,7 @@ class UserHydratorTest extends TestCase
         $result = $hydrator->dehydrate($user);
 
         $expectedKeys = [
-            'id', 'name', 'email', 'password', 'active', 'verified_at',
+            'id', 'name', 'email', 'password', 'operates_in', 'active', 'verified_at',
         ];
 
         $this->assertSame($expectedKeys, array_keys($result));

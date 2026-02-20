@@ -54,6 +54,7 @@ class IlluminateUserRepositoryTest extends TestCase
     private function makeUser(
         string $email = 'test@example.com',
         string $password = 'password',
+        array  $operatesIn = [],
         bool   $active = true,
     ): User
     {
@@ -62,6 +63,7 @@ class IlluminateUserRepositoryTest extends TestCase
             'Test User',
             UserEmail::unverified($email),
             HashedPassword::from($password),
+            $operatesIn,
             $active,
         );
     }

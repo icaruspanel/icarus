@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Domain\User;
 
 use Carbon\CarbonImmutable;
+use Icarus\Domain\Shared\OperatingContext;
 use Icarus\Domain\User\Events\UserEmailChanged;
 use Icarus\Domain\User\Events\UserPasswordChanged;
 use Icarus\Domain\User\Events\UserRegistered;
@@ -58,6 +59,14 @@ class UserTest extends TestCase
     }
 
     #[Test]
+    public function registerDefaultsToEmptyOperatesIn(): void
+    {
+        $user = User::register('Test User', 'test@example.com', 'password');
+
+        $this->assertSame([], $user->operatesIn);
+    }
+
+    #[Test]
     public function registerCreatesUnverifiedEmailByDefault(): void
     {
         $user = User::register('Test User', 'test@example.com', 'password');
@@ -102,7 +111,7 @@ class UserTest extends TestCase
             'Test User',
             UserEmail::unverified('test@example.com'),
             HashedPassword::from('password'),
-            true,
+            active: true,
         );
 
         $this->assertTrue($user->isActive());
@@ -116,8 +125,92 @@ class UserTest extends TestCase
             'Test User',
             UserEmail::unverified('test@example.com'),
             HashedPassword::from('password'),
-            false,
+            active: false,
         );
+
+        $this->assertFalse($user->isActive());
+    }
+
+    // ——————————————————————————————————————————————
+    // activate
+    // ——————————————————————————————————————————————
+
+    #[Test]
+    public function activateSetsUserToActive(): void
+    {
+        $user = new User(
+            UserId::generate(),
+            'Test User',
+            UserEmail::unverified('test@example.com'),
+            HashedPassword::from('password'),
+            active: false,
+        );
+
+        $user->activate();
+
+        $this->assertTrue($user->isActive());
+    }
+
+    #[Test]
+    public function activateReturnsSelf(): void
+    {
+        $user   = new User(
+            UserId::generate(),
+            'Test User',
+            UserEmail::unverified('test@example.com'),
+            HashedPassword::from('password'),
+            active: false,
+        );
+        $result = $user->activate();
+
+        $this->assertSame($user, $result);
+    }
+
+    #[Test]
+    public function activateIsIdempotent(): void
+    {
+        $user = User::register('Test User', 'test@example.com', 'password');
+
+        $user->activate();
+
+        $this->assertTrue($user->isActive());
+    }
+
+    // ——————————————————————————————————————————————
+    // deactivate
+    // ——————————————————————————————————————————————
+
+    #[Test]
+    public function deactivateSetsUserToInactive(): void
+    {
+        $user = User::register('Test User', 'test@example.com', 'password');
+
+        $user->deactivate();
+
+        $this->assertFalse($user->isActive());
+    }
+
+    #[Test]
+    public function deactivateReturnsSelf(): void
+    {
+        $user   = User::register('Test User', 'test@example.com', 'password');
+        $result = $user->deactivate();
+
+        $this->assertSame($user, $result);
+    }
+
+    #[Test]
+    public function deactivateIsIdempotent(): void
+    {
+        $user = new User(
+            UserId::generate(),
+            'Test User',
+            UserEmail::unverified('test@example.com'),
+            HashedPassword::from('password'),
+            active: false,
+        );
+
+        $user->deactivate();
 
         $this->assertFalse($user->isActive());
     }
@@ -242,6 +335,179 @@ class UserTest extends TestCase
     {
         $user   = User::register('Test User', 'test@example.com', 'password');
         $result = $user->changePassword('new-password');
+
+        $this->assertSame($user, $result);
+    }
+
+    // ——————————————————————————————————————————————
+    // canOperateIn
+    // ——————————————————————————————————————————————
+
+    #[Test]
+    public function canOperateInReturnsTrueWhenUserHasContext(): void
+    {
+        $user = new User(
+            UserId::generate(),
+            'Test User',
+            UserEmail::unverified('test@example.com'),
+            HashedPassword::from('password'),
+            [OperatingContext::Account],
+        );
+
+        $this->assertTrue($user->canOperateIn(OperatingContext::Account));
+    }
+
+    #[Test]
+    public function canOperateInReturnsFalseWhenUserLacksContext(): void
+    {
+        $user = new User(
+            UserId::generate(),
+            'Test User',
+            UserEmail::unverified('test@example.com'),
+            HashedPassword::from('password'),
+            [OperatingContext::Account],
+        );
+
+        $this->assertFalse($user->canOperateIn(OperatingContext::Platform));
+    }
+
+    #[Test]
+    public function canOperateInReturnsFalseWhenUserHasNoContexts(): void
+    {
+        $user = User::register('Test User', 'test@example.com', 'password');
+
+        $this->assertFalse($user->canOperateIn(OperatingContext::Account));
+    }
+
+    #[Test]
+    public function canOperateInReturnsTrueWhenUserHasAllRequestedContexts(): void
+    {
+        $user = new User(
+            UserId::generate(),
+            'Test User',
+            UserEmail::unverified('test@example.com'),
+            HashedPassword::from('password'),
+            [OperatingContext::Account, OperatingContext::Platform],
+        );
+
+        $this->assertTrue($user->canOperateIn(OperatingContext::Account, OperatingContext::Platform));
+    }
+
+    #[Test]
+    public function canOperateInReturnsFalseWhenUserLacksOneRequestedContext(): void
+    {
+        $user = new User(
+            UserId::generate(),
+            'Test User',
+            UserEmail::unverified('test@example.com'),
+            HashedPassword::from('password'),
+            [OperatingContext::Account],
+        );
+
+        $this->assertFalse($user->canOperateIn(OperatingContext::Account, OperatingContext::Platform));
+    }
+
+    // ——————————————————————————————————————————————
+    // addOperatesIn
+    // ——————————————————————————————————————————————
+
+    #[Test]
+    public function addOperatesInAddsContext(): void
+    {
+        $user = User::register('Test User', 'test@example.com', 'password');
+
+        $user->addOperatesIn(OperatingContext::Account);
+
+        $this->assertTrue($user->canOperateIn(OperatingContext::Account));
+    }
+
+    #[Test]
+    public function addOperatesInAddsMultipleContexts(): void
+    {
+        $user = User::register('Test User', 'test@example.com', 'password');
+
+        $user->addOperatesIn(OperatingContext::Account, OperatingContext::Platform);
+
+        $this->assertTrue($user->canOperateIn(OperatingContext::Account, OperatingContext::Platform));
+    }
+
+    #[Test]
+    public function addOperatesInDoesNotDuplicateExistingContext(): void
+    {
+        $user = new User(
+            UserId::generate(),
+            'Test User',
+            UserEmail::unverified('test@example.com'),
+            HashedPassword::from('password'),
+            [OperatingContext::Account],
+        );
+
+        $user->addOperatesIn(OperatingContext::Account);
+
+        $this->assertCount(1, $user->operatesIn);
+    }
+
+    #[Test]
+    public function addOperatesInReturnsSelf(): void
+    {
+        $user   = User::register('Test User', 'test@example.com', 'password');
+        $result = $user->addOperatesIn(OperatingContext::Account);
+
+        $this->assertSame($user, $result);
+    }
+
+    // ——————————————————————————————————————————————
+    // removeOperatesIn
+    // ——————————————————————————————————————————————
+
+    #[Test]
+    public function removeOperatesInRemovesContext(): void
+    {
+        $user = new User(
+            UserId::generate(),
+            'Test User',
+            UserEmail::unverified('test@example.com'),
+            HashedPassword::from('password'),
+            [OperatingContext::Account, OperatingContext::Platform],
+        );
+
+        $user->removeOperatesIn(OperatingContext::Account);
+
+        $this->assertFalse($user->canOperateIn(OperatingContext::Account));
+        $this->assertTrue($user->canOperateIn(OperatingContext::Platform));
+    }
+
+    #[Test]
+    public function removeOperatesInRemovesMultipleContexts(): void
+    {
+        $user = new User(
+            UserId::generate(),
+            'Test User',
+            UserEmail::unverified('test@example.com'),
+            HashedPassword::from('password'),
+            [OperatingContext::Account, OperatingContext::Platform],
+        );
+
+        $user->removeOperatesIn(OperatingContext::Account, OperatingContext::Platform);
+
+        $this->assertEmpty($user->operatesIn);
+    }
+
+    #[Test]
+    public function removeOperatesInIgnoresContextNotPresent(): void
+    {
+        $user = User::register('Test User', 'test@example.com', 'password');
+
+        $user->removeOperatesIn(OperatingContext::Account);
+
+        $this->assertEmpty($user->operatesIn);
+    }
+
+    #[Test]
+    public function removeOperatesInReturnsSelf(): void
+    {
+        $user   = User::register('Test User', 'test@example.com', 'password');
+        $result = $user->removeOperatesIn(OperatingContext::Account);
 
         $this->assertSame($user, $result);
     }

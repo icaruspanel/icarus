@@ -99,6 +99,10 @@ final class AuthenticateUserHandler
             throw UnableToAuthenticate::make('User is inactive', $user->id);
         }
 
+        if ($user->canOperateIn($command->context) === false) {
+            throw UnableToAuthenticate::make('User cannot operate in this context', $user->id);
+        }
+
         $this->gateAuthorisation($command, $user);
 
         try {

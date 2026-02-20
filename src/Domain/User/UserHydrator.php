@@ -4,9 +4,18 @@ declare(strict_types=1);
 namespace Icarus\Domain\User;
 
 use Carbon\CarbonImmutable;
+use Icarus\Domain\Shared\OperatingContext;
 
 /**
- * @phpstan-type UserData array{id: string, name: string, email: string, password: string, active: bool, verified_at: ?string}
+ * @phpstan-type UserData array{
+ *     id: string,
+ *     name: string,
+ *     email: string,
+ *     password: string,
+ *     active: bool,
+ *     operates_in: string,
+ *     verified_at: ?string
+ * }
  */
 final class UserHydrator
 {
@@ -32,7 +41,11 @@ final class UserHydrator
             $data['name'],
             UserEmail::create($data['email'], $verifiedAt),
             new HashedPassword($data['password']),
-            (bool) $data['active']
+            array_values(array_map(
+                OperatingContext::from(...),
+                is_string($data['operates_in']) ? json_decode($data['operates_in'], true) : $data['operates_in']
+            )),
+            (bool)$data['active']
         );
     }
 
@@ -44,6 +57,7 @@ final class UserHydrator
      * @return array<string, mixed>
      *
      * @phpstan-return UserData
+     * @throws \JsonException
      */
     public function dehydrate(User $user): array
     {
@@ -52,6 +66,10 @@ final class UserHydrator
             'name'        => $user->name,
             'email'       => $user->email->email,
             'password'    => $user->password->hash,
+            'operates_in' => json_encode(
+                array_map(static fn (OperatingContext $context) => $context->value, $user->operatesIn),
+                JSON_THROW_ON_ERROR
+            ),
             'active'      => $user->active,
             'verified_at' => $user->email->verifiedAt?->format('Y-m-d H:i:s'),
         ];

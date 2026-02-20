@@ -53,13 +53,19 @@ class AuthenticateUserHandlerTest extends TestCase
         );
     }
 
-    private function makeUser(string $email = 'test@example.com', string $password = 'password', bool $active = true): User
+    private function makeUser(
+        string $email = 'test@example.com',
+        string $password = 'password',
+        array  $operatesIn = [OperatingContext::Account],
+        bool   $active = true,
+    ): User
     {
         return new User(
             UserId::generate(),
             'Test User',
             UserEmail::unverified($email),
             HashedPassword::from($password),
+            $operatesIn,
             $active,
         );
     }
@@ -264,6 +270,48 @@ class AuthenticateUserHandlerTest extends TestCase
 
         $this->expectException(UnableToAuthenticate::class);
         $this->expectExceptionMessage('User is inactive');
+
+        $this->handler->handle($command);
+    }
+
+    #[Test]
+    public function handleThrowsWhenUserCannotOperateInContext(): void
+    {
+        $command = $this->makeCommand();
+        $user    = $this->makeUser(operatesIn: [OperatingContext::Platform]);
+
+        $this->dispatcher->shouldReceive('dispatch')
+                         ->with(Mockery::type(AuthenticationAttempting::class))
+                         ->once();
+
+        $this->userRepository->shouldReceive('findByEmail')
+                             ->with($command->email)
+                             ->once()
+                             ->andReturn($user);
+
+        $this->expectException(UnableToAuthenticate::class);
+        $this->expectExceptionMessage('User cannot operate in this context');
+
+        $this->handler->handle($command);
+    }
+
+    #[Test]
+    public function handleThrowsWhenUserHasNoOperatingContexts(): void
+    {
+        $command = $this->makeCommand();
+        $user    = $this->makeUser(operatesIn: []);
+
+        $this->dispatcher->shouldReceive('dispatch')
+                         ->with(Mockery::type(AuthenticationAttempting::class))
+                         ->once();
+
+        $this->userRepository->shouldReceive('findByEmail')
+                             ->with($command->email)
+                             ->once()
+                             ->andReturn($user);
+
+        $this->expectException(UnableToAuthenticate::class);
+        $this->expectExceptionMessage('User cannot operate in this context');
 
         $this->handler->handle($command);
     }

@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
+            $table->json('operates_in')->nullable();
 
             $table->boolean('active')->default(true);
             $table->timestamp('verified_at')->nullable();

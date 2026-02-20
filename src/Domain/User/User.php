@@ -5,6 +5,7 @@ namespace Icarus\Domain\User;
 
 use Carbon\CarbonImmutable;
 use Icarus\Domain\Shared\HasEvents;
+use Icarus\Domain\Shared\OperatingContext;
 use Icarus\Domain\Shared\RecordsEvents;
 use Icarus\Domain\User\Events\UserEmailChanged;
 use Icarus\Domain\User\Events\UserPasswordChanged;
@@ -44,19 +45,34 @@ final class User implements RecordsEvents
 
     private(set) bool $active;
 
+    /**
+     * @var list<\Icarus\Domain\Shared\OperatingContext>
+     */
+    private(set) array $operatesIn = [];
+
+    /**
+     * @param \Icarus\Domain\User\UserId                   $id
+     * @param string                                       $name
+     * @param \Icarus\Domain\User\UserEmail                $email
+     * @param \Icarus\Domain\User\HashedPassword           $password
+     * @param list<\Icarus\Domain\Shared\OperatingContext> $operatesIn
+     * @param bool                                         $active
+     */
     public function __construct(
         UserId         $id,
         string         $name,
         UserEmail      $email,
         HashedPassword $password,
-        bool $active = true,
+        array          $operatesIn = [],
+        bool           $active = true
     )
     {
-        $this->id       = $id;
-        $this->name     = $name;
-        $this->email    = $email;
-        $this->password = $password;
-        $this->active   = $active;
+        $this->id         = $id;
+        $this->name       = $name;
+        $this->email      = $email;
+        $this->password   = $password;
+        $this->operatesIn = $operatesIn;
+        $this->active     = $active;
     }
 
     /**
@@ -100,6 +116,78 @@ final class User implements RecordsEvents
         $this->password = HashedPassword::from($password);
 
         $this->recordEvent(new UserPasswordChanged($this->id));
+
+        return $this;
+    }
+
+    /**
+     * @param \Icarus\Domain\Shared\OperatingContext ...$context
+     *
+     * @return bool
+     */
+    public function canOperateIn(OperatingContext ...$context): bool
+    {
+        return array_all(
+            $context,
+            fn (OperatingContext $operatingContext) => in_array(
+                $operatingContext,
+                $this->operatesIn,
+                true
+            )
+        );
+    }
+
+    /**
+     * Add operating contexts the user operates in.
+     *
+     * @param \Icarus\Domain\Shared\OperatingContext ...$context
+     *
+     * @return $this
+     */
+    public function addOperatesIn(OperatingContext ...$context): self
+    {
+        $this->operatesIn = array_values(array_unique(array_merge($this->operatesIn, $context), SORT_REGULAR));
+
+        return $this;
+    }
+
+    /**
+     * Remove operating contexts the user operates in.
+     *
+     * @param \Icarus\Domain\Shared\OperatingContext ...$context
+     *
+     * @return $this
+     */
+    public function removeOperatesIn(OperatingContext ...$context): self
+    {
+        $this->operatesIn = array_values(array_filter(
+            $this->operatesIn,
+            static fn (OperatingContext $existing) => ! in_array($existing, $context, true),
+        ));
+
+        return $this;
+    }
+
+    /**
+     * Activate the user.
+     *
+     * @return $this
+     */
+    public function activate(): self
+    {
+        $this->active = true;
+
+        return $this;
+    }
+
+    /**
+     * Deactivate the user.
+     *
+     * @return $this
+     */
+    public function deactivate(): self
+    {
+        $this->active = false;
 
         return $this;
     }
