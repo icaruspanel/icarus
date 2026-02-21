@@ -5,7 +5,7 @@ namespace App\Http\Routes\Account;
 
 use App\Http\Controllers\Account\LoginWithCredentials;
 use App\Http\Controllers\Account\ShowMyDetails;
-use App\Support\RouteMapper;
+use Icarus\Kernel\Contracts\RouteMapper;
 use Illuminate\Routing\Router;
 
 final class AccountAuthRoutes implements RouteMapper

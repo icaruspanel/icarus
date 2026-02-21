@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Boot;
 
+use App\Http\Middleware\EnforceJsonRequests;
+use App\Http\Middleware\EnforceOperatingContext;
 use App\Http\Middleware\SetAuthContextFromHeaderToken;
 use App\Http\Middleware\SetOperatingContext;
 use Closure;
@@ -19,8 +21,17 @@ final class ConfigureMiddleware
     public function __invoke(Middleware $middleware): void
     {
         $this->setupAliases($middleware);
+        $this->setupApiMiddleware($middleware);
         $this->setupAccountMiddleware($middleware);
         $this->setupPlatformMiddleware($middleware);
+    }
+
+    private function setupApiMiddleware(Middleware $middleware): void
+    {
+        $middleware->group('api', [
+            SubstituteBindings::class,
+            EnforceJsonRequests::class,
+        ]);
     }
 
     private function setupAliases(Middleware $middleware): void
@@ -28,6 +39,7 @@ final class ConfigureMiddleware
         $middleware->alias([
             'context.auth'      => SetAuthContextFromHeaderToken::class,
             'context.operating' => SetOperatingContext::class,
+            'context.enforce'   => EnforceOperatingContext::class,
         ]);
     }
 
@@ -36,6 +48,7 @@ final class ConfigureMiddleware
         $middleware->group('account', [
             SubstituteBindings::class,
             'context.operating:account',
+            'context.enforce',
         ]);
     }
 
@@ -44,6 +57,7 @@ final class ConfigureMiddleware
         $middleware->group('platform', [
             SubstituteBindings::class,
             'context.operating:platform',
+            'context.enforce',
         ]);
     }
 }

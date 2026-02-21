@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace App\Http\Routes;
 
-use App\Support\RouteMapper;
+use Icarus\Kernel\Contracts\RouteMapper;
 use Illuminate\Routing\Router;
 
 final class DefaultRoutes implements RouteMapper

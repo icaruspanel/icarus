@@ -35,6 +35,19 @@ abstract readonly class Id implements Stringable
     }
 
     /**
+     * Check if the given ID is the same as this ID.
+     *
+     * @param \Icarus\Domain\Shared\Id $id
+     *
+     * @return bool
+     */
+    public function is(self $id): bool
+    {
+        return static::class === $id::class
+               && $this->id === $id->id;
+    }
+
+    /**
      * Magic method {@see https://www.php.net/manual/en/language.oop5.magic.php#object.tostring}
      * allows a class to decide how it will react when it is treated like a string.
      *

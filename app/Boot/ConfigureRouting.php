@@ -4,10 +4,10 @@ declare(strict_types=1);
 namespace App\Boot;
 
 use App\Http\Middleware\EnforceJsonRequests;
-use App\Http\Routes\Account;
 use App\Http\Routes\DefaultRoutes;
-use App\Http\Routes\Platform;
 use Closure;
+use Icarus\Modules\Core\Http\Routes\Api\Account;
+use Icarus\Modules\Core\Http\Routes\Api\Platform;
 use Illuminate\Routing\Router;
 
 final class ConfigureRouting
@@ -18,7 +18,7 @@ final class ConfigureRouting
     }
 
     /**
-     * @var array<string, list<class-string<\App\Support\RouteMapper>>>
+     * @var array<string, list<class-string<\Icarus\Kernel\Contracts\RouteMapper>>>
      */
     private static array $mappers = [
         'web' => [
@@ -28,7 +28,7 @@ final class ConfigureRouting
 
 
     /**
-     * @var array<string, list<class-string<\App\Support\RouteMapper>>>
+     * @var array<string, list<class-string<\Icarus\Kernel\Contracts\RouteMapper>>>
      */
     private static array $accountMappers = [
         'api' => [
@@ -38,7 +38,7 @@ final class ConfigureRouting
 
 
     /**
-     * @var array<string, list<class-string<\App\Support\RouteMapper>>>
+     * @var array<string, list<class-string<\Icarus\Kernel\Contracts\RouteMapper>>>
      */
     private static array $platformMappers = [
         'api' => [
@@ -60,7 +60,7 @@ final class ConfigureRouting
     }
 
     /**
-     * @param list<class-string<\App\Support\RouteMapper>> $mappers
+     * @param list<class-string<\Icarus\Kernel\Contracts\RouteMapper>> $mappers
      */
     private function mapWeb(Router $router, array $mappers): void
     {
@@ -70,7 +70,7 @@ final class ConfigureRouting
     }
 
     /**
-     * @param list<class-string<\App\Support\RouteMapper>> $mappers
+     * @param list<class-string<\Icarus\Kernel\Contracts\RouteMapper>> $mappers
      */
     private function mapAccountApi(Router $router, array $mappers): void
     {
@@ -78,7 +78,7 @@ final class ConfigureRouting
                ->prefix('account/')
                ->name('account:')
                ->group(function () use ($router, $mappers) {
-                   /** @var class-string<\App\Support\RouteMapper> $mapper */
+                   /** @var class-string<\Icarus\Kernel\Contracts\RouteMapper> $mapper */
                    foreach ($mappers as $mapper) {
                        new $mapper()->map($router);
                    }
@@ -86,7 +86,7 @@ final class ConfigureRouting
     }
 
     /**
-     * @param list<class-string<\App\Support\RouteMapper>> $mappers
+     * @param list<class-string<\Icarus\Kernel\Contracts\RouteMapper>> $mappers
      */
     private function mapPlatformApi(Router $router, array $mappers): void
     {
@@ -94,7 +94,7 @@ final class ConfigureRouting
                ->prefix('platform/')
                ->name('platform:')
                ->group(function () use ($router, $mappers) {
-                   /** @var class-string<\App\Support\RouteMapper> $mapper */
+                   /** @var class-string<\Icarus\Kernel\Contracts\RouteMapper> $mapper */
                    foreach ($mappers as $mapper) {
                        new $mapper()->map($router);
                    }

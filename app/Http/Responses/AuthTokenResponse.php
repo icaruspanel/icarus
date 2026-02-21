@@ -3,12 +3,12 @@ declare(strict_types=1);
 
 namespace App\Http\Responses;
 
-use Icarus\Domain\AuthToken\Commands\AuthenticationResult;
+use Icarus\Domain\AuthToken\DataObjects\AuthenticationResult;
 
 class AuthTokenResponse
 {
     /**
-     * @param \Icarus\Domain\AuthToken\Commands\AuthenticationResult $result
+     * @param \Icarus\Domain\AuthToken\DataObjects\AuthenticationResult $result
      *
      * @return array<string, mixed>
      */

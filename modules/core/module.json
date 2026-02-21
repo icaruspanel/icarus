@@ -1,0 +1,18 @@
+{
+  "$schema"     : "https://icaruspanel.com/schemas/module/v1.schema.json",
+  "type"        : "module",
+  "name"        : "Core",
+  "description" : "The core module provides essential functionality for the Icarus Panel.",
+  "version"     : "0.1.0-dev",
+  "definition"  : "Icarus\\Modules\\Core\\CoreModule",
+  "author"      : {
+    "name": "ollieread",
+    "url" : "https://ollieread.com"
+  },
+  "license"     : "MIT",
+  "urls"        : {},
+  "requires"    : "^0.1.0",
+  "capabilities": [
+    "unrestricted"
+  ]
+}

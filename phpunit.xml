@@ -27,7 +27,8 @@
             <file>src/Domain/Shared/AuthContext.php</file>
             <file>src/Domain/Shared/Cancellable.php</file>
             <file>src/Domain/Shared/RecordsEvents.php</file>
-            <file>src/Domain/Shared/EventDispatcher.php</file>
+            <file>src/Kernel/Contracts/EventDispatcher.php</file>
+            <file>src/Kernel/Contracts/RecordsLifecycleEvents.php</file>
 
             <!-- User: interfaces, IDs, DTOs, events, read models -->
             <file>src/Domain/User/UserRepository.php</file>
@@ -53,11 +54,13 @@
             <file>src/Domain/AuthToken/Exceptions/UnableToAuthenticate.php</file>
             <file>src/Domain/AuthToken/Hooks/AuthenticatingUser.php</file>
 
-            <!-- Infrastructure: service providers, framework glue -->
-            <file>src/Infrastructure/Shared/SharedServiceProvider.php</file>
-            <file>src/Infrastructure/Shared/HandlesIlluminateConnections.php</file>
-            <file>src/Infrastructure/User/UserDomainServiceProvider.php</file>
-            <file>src/Infrastructure/AuthToken/AuthTokenDomainServiceProvider.php</file>
+            <!-- Kernel: service providers, framework glue -->
+            <file>src/Kernel/KernelServiceProvider.php</file>
+            <file>src/Kernel/Concerns/HandlesIlluminateConnections.php</file>
+            <file>src/Kernel/User/UserDomainServiceProvider.php</file>
+            <file>src/Kernel/AuthToken/AuthTokenDomainServiceProvider.php</file>
+            <file>src/Kernel/Account/AccountDomainServiceProvider.php</file>
+            <file>src/Kernel/Permission/PermissionDomainServiceProvider.php</file>
 
             <!-- App: service providers -->
             <file>app/Providers/AppServiceProvider.php</file>

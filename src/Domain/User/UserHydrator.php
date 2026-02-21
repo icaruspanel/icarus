@@ -27,6 +27,8 @@ final class UserHydrator
      * @phpstan-param UserData $data
      *
      * @return \Icarus\Domain\User\User
+     *
+     * @throws \JsonException
      */
     public function hydrate(array $data): User
     {
@@ -36,15 +38,20 @@ final class UserHydrator
             $verifiedAt = CarbonImmutable::createFromFormat('Y-m-d H:i:s', $verifiedAt);
         }
 
+        $operatesIn = json_decode($data['operates_in'], true, 512, JSON_THROW_ON_ERROR);
+        $contexts   = [];
+
+        if (is_array($operatesIn)) {
+            /** @var array<string> $operatesIn */
+            $contexts = OperatingContext::collect($operatesIn);
+        }
+
         return new User(
             new UserId($data['id']),
             $data['name'],
             UserEmail::create($data['email'], $verifiedAt),
             new HashedPassword($data['password']),
-            array_values(array_map(
-                OperatingContext::from(...),
-                is_string($data['operates_in']) ? json_decode($data['operates_in'], true) : $data['operates_in']
-            )),
+            $contexts,
             (bool)$data['active']
         );
     }

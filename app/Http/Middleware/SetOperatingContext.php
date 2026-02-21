@@ -3,16 +3,16 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
-use App\Icarus;
 use Closure;
 use Icarus\Domain\Shared\OperatingContext;
+use Icarus\Kernel\Icarus;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 final class SetOperatingContext
 {
     /**
-     * @var \App\Icarus
+     * @var \Icarus\Kernel\Icarus
      */
     private Icarus $icarus;
 
@@ -25,7 +25,7 @@ final class SetOperatingContext
     {
         $context = OperatingContext::from($contextName);
 
-        $this->icarus->setContext($context);
+        $this->icarus->setOperatingContext($context);
 
         /** @var \Symfony\Component\HttpFoundation\Response */
         return $next($request);

@@ -5,12 +5,12 @@ namespace App\Http\Middleware;
 
 use App\Http\Exceptions\NotAuthenticated;
 use App\Http\Exceptions\OutOfOperatingContext;
-use App\Icarus;
 use Carbon\CarbonImmutable;
 use Closure;
 use Icarus\Domain\AuthToken\TokenPrefix;
 use Icarus\Domain\Shared\AuthContext;
-use Icarus\Infrastructure\AuthToken\Queries\ResolveAuthToken;
+use Icarus\Kernel\AuthToken\Actions\ResolveAuthToken;
+use Icarus\Kernel\Icarus;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Http\Request;
@@ -19,7 +19,7 @@ use Symfony\Component\HttpFoundation\Response;
 class SetAuthContextFromHeaderToken
 {
     /**
-     * @var \App\Icarus
+     * @var \Icarus\Kernel\Icarus
      */
     private Icarus $icarus;
 
@@ -29,7 +29,7 @@ class SetAuthContextFromHeaderToken
     private AuthManager $auth;
 
     /**
-     * @var \Icarus\Infrastructure\AuthToken\Queries\ResolveAuthToken
+     * @var \Icarus\Kernel\AuthToken\Actions\ResolveAuthToken
      */
     private ResolveAuthToken $query;
 
@@ -57,14 +57,6 @@ class SetAuthContextFromHeaderToken
         // so we need to make sure that the default auth guard is the API one
         $this->auth->shouldUse('api');
 
-        // This shouldn't ever be hit, in theory, but it's here just in case
-        if ($this->icarus->hasContext() === false) {
-            throw new OutOfOperatingContext('Operating context missing');
-        }
-
-        // Get the current operating context
-        $currentContext = $this->icarus->getContext();
-
         $rawToken = $request->bearerToken();
 
         // If there's no token, error
@@ -74,11 +66,6 @@ class SetAuthContextFromHeaderToken
 
         // Identify the context from the token
         $context = TokenPrefix::resolve($rawToken);
-
-        // If the context is null or doesn't match the current, error
-        if ($context !== $currentContext) {
-            throw new NotAuthenticated('Invalid token context');
-        }
 
         // Strip the token prefix
         $token = TokenPrefix::strip($rawToken);

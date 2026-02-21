@@ -5,7 +5,7 @@ namespace Tests\Unit\Domain\AuthToken\ReadModels;
 
 use Carbon\CarbonImmutable;
 use Icarus\Domain\AuthToken\AuthTokenId;
-use Icarus\Domain\AuthToken\ReadModels\AuthTokenResult;
+use Icarus\Domain\AuthToken\DataObjects\AuthTokenResult;
 use Icarus\Domain\AuthToken\StoredToken;
 use Icarus\Domain\Shared\OperatingContext;
 use Icarus\Domain\User\UserId;
