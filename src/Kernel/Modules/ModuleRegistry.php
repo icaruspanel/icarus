@@ -3,82 +3,95 @@ declare(strict_types=1);
 
 namespace Icarus\Kernel\Modules;
 
-use Icarus\Kernel\Contracts\EventDispatcher;
-use Icarus\Kernel\Modules\Collectors\CollectorRegistry;
-use RuntimeException;
+use Icarus\Kernel\Modules\Attributes\NoContext;
+use Icarus\Kernel\Modules\Attributes\Register;
+use Icarus\Kernel\Modules\Contracts\Collector;
+use ReflectionClass;
+use ReflectionMethod;
+use ReflectionNamedType;
 
 final class ModuleRegistry
 {
     /**
-     * @var \Icarus\Kernel\Contracts\EventDispatcher
-     */
-    private EventDispatcher $dispatcher;
-
-    /**
-     * @var \Icarus\Kernel\Modules\Collectors\CollectorRegistry
-     */
-    private CollectorRegistry $collectorRegistry;
-
-    /**
-     * The list of modules registered in the application.
-     *
-     * @var array<string, \Icarus\Kernel\Modules\RegisteredModule>
+     * @var array<string, \Icarus\Kernel\Modules\ModuleManifest>
      */
     private array $modules = [];
 
-    public function __construct(
-        EventDispatcher   $dispatcher,
-        CollectorRegistry $collectorRegistry
-    )
+    /**
+     * @param array $moduleData
+     *
+     * @return \Icarus\Kernel\Modules\ModuleManifest
+     *
+     * @throws \ReflectionException
+     */
+    public function resolve(array $moduleData): ModuleManifest
     {
-        $this->dispatcher        = $dispatcher;
-        $this->collectorRegistry = $collectorRegistry;
+        return $this->modules[$moduleData['ident']] = new ModuleManifest(
+            $moduleData['ident'],
+            $moduleData['name'],
+            $moduleData['description'],
+            $moduleData['definition'],
+            array_map(static fn (string $capability) => Capability::from($capability), $moduleData['capabilities']),
+            $moduleData['dependencies'],
+            $moduleData['after'],
+            $this->collectRegistrations($moduleData['definition']),
+        );
     }
 
     /**
-     * Check if a module with the given identifier is already registered.
+     * @param class-string $class
      *
-     * @param string $ident
+     * @return array<\Icarus\Kernel\Modules\RegistrationEntry>
      *
-     * @return bool
+     * @throws \ReflectionException
      */
-    public function registered(string $ident): bool
+    private function collectRegistrations(string $class): array
     {
-        return isset($this->modules[$ident]);
-    }
+        $reflector = new ReflectionClass($class);
+        $entries   = [];
 
-    /**
-     * Register a module in the application.
-     *
-     * @param RegisteredModule $module
-     *
-     * @return void
-     */
-    public function register(RegisteredModule $module): void
-    {
-        if ($this->registered($module->ident)) {
-            /** @todo Replace exception with custom exception */
-            throw new RuntimeException("Module with identifier {$module->ident} is already registered.");
+        foreach ($reflector->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
+            // We don't want static methods or methods without parameters.
+            if (! $method->isStatic() || $method->getNumberOfParameters() === 0) {
+                continue;
+            }
+
+            $attribute = $method->getAttributes(Register::class)[0] ?? null;
+
+            // We also don't want methods without the register attribute
+            if ($attribute === null) {
+                continue;
+            }
+
+            $collector = null;
+
+            // Find the collector parameter
+            foreach ($method->getParameters() as $parameter) {
+                if (
+                    $parameter->getType() instanceof ReflectionNamedType
+                    && is_subclass_of($parameter->getType()->getName(), Collector::class)
+                ) {
+                    $collector = $parameter->getType()->getName();
+                    break;
+                }
+            }
+
+            // If there is no collector, we don't care about this method
+            if ($collector === null) {
+                continue;
+            }
+
+            /** @var \Icarus\Kernel\Modules\Attributes\Register $register */
+            $register = $attribute->newInstance();
+
+            $entries[] = new RegistrationEntry(
+                $method->getName(),
+                $collector,
+                $register->operatingContext,
+                ! empty($method->getAttributes(NoContext::class))
+            );
         }
 
-        $this->modules[$module->ident] = $module;
-    }
-
-    /**
-     * @param class-string<\Icarus\Kernel\Modules\Contracts\Collector> $collector
-     *
-     * @return void
-     */
-    public function collect(string $collector): void
-    {
-        $handler = $this->collectorRegistry->get($collector);
-
-        if ($handler === null) {
-            return;
-        }
-
-        // TODO: Collect properly
-
-        $handler->register();
+        return $entries;
     }
 }
